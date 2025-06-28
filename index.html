@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Payment Transaction Tracker</title>
+    <title>Alpine Public School - Daily Payment Transaction Tracker</title>
     <style>
         /* Your original CSS from transaction_form_Gemini.html */
         * {
@@ -305,7 +305,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Daily Payment Transaction Tracker</h1>
+            <h1>Alpine Public School - Daily Payment Transaction Tracker</h1>
             <p>Professional Financial Recording System</p>
         </div>
         
@@ -341,7 +341,9 @@
                         <label for="paymentNature">Nature of Payment *</label>
                         <select id="paymentNature" name="paymentNature" required>
                             <option value="">Select payment type</option>
-                            <option value="Salary">Salary</option>
+                            <option value="Salary to Teaching Staff">Salary to Teaching Staff</option>
+                            <option value="Salary to Support Staff">Salary to Support Staff</option>
+                            <option value="Salary to Bus Driver">Salary to Bus Driver</option>
                             <option value="Vendor Payment">Vendor Payment</option>
                             <option value="Rent">Rent</option>
                             <option value="Utilities">Utilities</option>
@@ -354,8 +356,9 @@
                         </select>
                     </div>
                     
-                    <div class="form-group">
+                    <div class="form-group" id="payeeNameGroup">
                         <label for="payeeName">Payee Name *</label>
+                        <!-- Dynamic input or select will be rendered here -->
                         <input type="text" id="payeeName" name="payeeName" placeholder="Enter payee name" required>
                     </div>
                     
@@ -380,6 +383,18 @@
                             <option value="Card">Card</option>
                         </select>
                     </div>
+
+                    <div class="form-group" id="bankNameGroup" style="display: none;">
+                        <label for="bankName">Bank Name *</label>
+                        <select id="bankName" name="bankName">
+                            <option value="">Select Bank</option>
+                            <option value="HDFC">HDFC</option>
+                            <option value="ICICI">ICICI</option>
+                            <option value="PNB">PNB</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
                 </div>
                 
                 <div class="btn-container">
@@ -392,8 +407,8 @@
             <div class="table-header">
                 <h2>Transaction History</h2>
                 <div class="table-header-buttons">
-                    <!-- Removed Export to Excel Button -->
-                    <!-- Removed Email Daily Report Button -->
+                    <!-- Export to Excel Button Removed -->
+                    <!-- Email Daily Report Button Removed -->
                 </div>
             </div>
             
@@ -409,6 +424,7 @@
                             <th>Address</th>
                             <th>Invoice/Bill No.</th>
                             <th>Payment Method</th>
+                            <th>Bank Name</th> <!-- Added Bank Name Header -->
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -423,18 +439,139 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     
     <script>
-        // Backend URL for Project 4 (will be updated after Apps Script deployment)
-        const backendWebAppUrl = 'https://script.google.com/macros/s/AKfycbwb4PLvNHPG6NkySjltPSqbkYCd_GtsYw3QRBttbDPLT1moRQq0SW6cy1-BU7hznY8r/exec'; // Your Project 4 Apps Script Web App URL
+        // Backend URL for Project 4
+        const backendWebAppUrl = 'https://script.google.com/macros/s/AKfycbwb4PLvNHPG6NkySjltPSqbkYCd_GtsYw3QRBttbDPLT1moRQq0SW6cy1-BU7hznY8r/exec'; 
 
-        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
-        // Ensure serialCounter starts from the next available number or 1
+        let transactions = JSON.parse(localStorage.getItem('transactions_project4')) || []; // Unique key for Project 4
         let serialCounter = transactions.length > 0 ? Math.max(...transactions.map(t => t.serialNo)) + 1 : 1;
         
-        document.getElementById('transactionDate').valueAsDate = new Date();
-        
-        loadTransactions();
-        updateSummary();
-        
+        // DOM Elements
+        const transactionForm = document.getElementById('transactionForm');
+        const transactionDateInput = document.getElementById('transactionDate');
+        const amountInput = document.getElementById('amount');
+        const paymentNatureSelect = document.getElementById('paymentNature');
+        const payeeNameGroup = document.getElementById('payeeNameGroup'); // Container for dynamic payeeName field
+        const payeeAddressInput = document.getElementById('payeeAddress');
+        const invoiceNumberInput = document.getElementById('invoiceNumber');
+        const paymentMethodSelect = document.getElementById('paymentMethod');
+        const bankNameGroup = document.getElementById('bankNameGroup'); // Container for dynamic bankName field
+        const bankNameSelect = document.getElementById('bankName'); // Select element inside bankNameGroup
+        const transactionBody = document.getElementById('transactionBody');
+        const todayCountSpan = document.getElementById('todayCount');
+        const totalAmountSpan = document.getElementById('totalAmount');
+        const pendingCountSpan = document.getElementById('pendingCount');
+
+        // Staff Lists for dynamic Payee Name
+        const teachingStaff = ['Mr. Sharma', 'Ms. Kaur', 'Dr. Singh'];
+        const supportStaff = ['Mr. Kumar (Admin)', 'Ms. Devi (Cleaner)', 'Mr. Khan (Security)'];
+        const busDrivers = ['Driver A', 'Driver B', 'Driver C'];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            transactionDateInput.valueAsDate = new Date(); // Set default date
+            loadTransactions(); // Load and display existing transactions
+            updateSummary(); // Update summary cards
+            updatePayeeNameField(); // Set initial state for Payee Name
+            updateBankNameFieldVisibility(); // Set initial state for Bank Name
+        });
+
+        // --- Dynamic Payee Name Logic ---
+        function updatePayeeNameField() {
+            const currentNature = paymentNatureSelect.value;
+            let currentPayeeNameInput = document.getElementById('payeeName'); // Current input/select
+            let newPayeeNameElement;
+
+            // Remove existing payeeName field
+            if (currentPayeeNameInput) {
+                payeeNameGroup.removeChild(currentPayeeNameInput);
+            }
+
+            const label = document.createElement('label');
+            label.htmlFor = 'payeeName';
+            label.textContent = 'Payee Name *'; // Required for all payee types
+
+            if (currentNature === 'Salary to Teaching Staff') {
+                newPayeeNameElement = document.createElement('select');
+                newPayeeNameElement.id = 'payeeName';
+                newPayeeNameElement.name = 'payeeName';
+                newPayeeNameElement.required = true;
+                newPayeeNameElement.className = 'flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
+                
+                let defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Select Teaching Staff';
+                newPayeeNameElement.appendChild(defaultOption);
+                teachingStaff.forEach(name => {
+                    let option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    newPayeeNameElement.appendChild(option);
+                });
+            } else if (currentNature === 'Salary to Support Staff') {
+                newPayeeNameElement = document.createElement('select');
+                newPayeeNameElement.id = 'payeeName';
+                newPayeeNameElement.name = 'payeeName';
+                newPayeeNameElement.required = true;
+                newPayeeNameElement.className = 'flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
+                
+                let defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Select Support Staff';
+                newPayeeNameElement.appendChild(defaultOption);
+                supportStaff.forEach(name => {
+                    let option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    newPayeeNameElement.appendChild(option);
+                });
+            } else if (currentNature === 'Salary to Bus Driver') {
+                newPayeeNameElement = document.createElement('select');
+                newPayeeNameElement.id = 'payeeName';
+                newPayeeNameElement.name = 'payeeName';
+                newPayeeNameElement.required = true;
+                newPayeeNameElement.className = 'flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
+                
+                let defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Select Bus Driver';
+                newPayeeNameElement.appendChild(defaultOption);
+                busDrivers.forEach(name => {
+                    let option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    newPayeeNameElement.appendChild(option);
+                });
+            } else {
+                newPayeeNameElement = document.createElement('input');
+                newPayeeNameElement.type = 'text';
+                newPayeeNameElement.id = 'payeeName';
+                newPayeeNameElement.name = 'payeeName';
+                newPayeeNameElement.placeholder = 'Enter payee name';
+                newPayeeNameElement.required = true;
+                newPayeeNameElement.className = 'flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
+            }
+            payeeNameGroup.innerHTML = ''; // Clear existing content including label
+            payeeNameGroup.appendChild(label);
+            payeeNameGroup.appendChild(newPayeeNameElement);
+        }
+        paymentNatureSelect.addEventListener('change', updatePayeeNameField);
+        // --- End Dynamic Payee Name Logic ---
+
+        // --- Dynamic Bank Name Logic ---
+        function updateBankNameFieldVisibility() {
+            const currentPaymentMethod = paymentMethodSelect.value;
+            if (currentPaymentMethod === 'Bank Transfer' || currentPaymentMethod === 'UPI' || currentPaymentMethod === 'Cheque') {
+                bankNameGroup.style.display = 'block';
+                bankNameSelect.setAttribute('required', 'true');
+            } else {
+                bankNameGroup.style.display = 'none';
+                bankNameSelect.removeAttribute('required');
+                bankNameSelect.value = ''; // Clear selection when hidden
+            }
+        }
+        paymentMethodSelect.addEventListener('change', updateBankNameFieldVisibility);
+        // --- End Dynamic Bank Name Logic ---
+
+
         document.getElementById('transactionForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -445,10 +582,12 @@
                 transactionDate: formData.get('transactionDate'),
                 amount: parseFloat(formData.get('amount')),
                 paymentNature: formData.get('paymentNature'),
-                payeeName: formData.get('payeeName'),
+                payeeName: document.getElementById('payeeName').value, // Get value from current payeeName element
                 payeeAddress: formData.get('payeeAddress'),
                 invoiceNumber: formData.get('invoiceNumber'),
-                paymentMethod: formData.get('paymentMethod')
+                paymentMethod: formData.get('paymentMethod'),
+                // Include bankName if it's visible and selected
+                bankName: bankNameGroup.style.display === 'block' ? bankNameSelect.value : '' 
             };
             
             // --- IFRAME SUBMISSION LOGIC (for Google Sheet integration) ---
@@ -496,6 +635,8 @@
                     updateSummary();
                     e.target.reset(); // Reset the form
                     document.getElementById('transactionDate').valueAsDate = new Date(); // Reset date
+                    updatePayeeNameField(); // Re-initialize dynamic payee name
+                    updateBankNameFieldVisibility(); // Re-initialize dynamic bank name
                 } catch (iframeError) {
                     console.error("Error during iframe submission confirmation:", iframeError);
                     showNotification('Transaction submitted, but confirmation failed. Check Google Sheet.', 'pending'); // Use pending as we can't confirm success
@@ -524,6 +665,7 @@
                 <td>${transaction.payeeAddress || '-'}</td>
                 <td>${transaction.invoiceNumber || '-'}</td>
                 <td>${transaction.paymentMethod || '-'}</td>
+                <td>${transaction.bankName || '-'}</td> <!-- Display Bank Name in table -->
                 <td><button onclick="deleteTransaction(${transaction.id})" style="background:#e74c3c;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;">Delete</button></td>
             `;
         }
@@ -553,7 +695,39 @@
             document.getElementById('pendingCount').textContent = '0'; // If you want to track pending, you need a 'status' field for each transaction and filter accordingly
         }
         
-        // Removed exportToCSV function
+        function exportToCSV() {
+            if (transactions.length === 0) {
+                showNotification('No transactions to export.', 'error');
+                return;
+            }
+            const headers = ['S.No.', 'Transaction Date', 'Amount', 'Nature of Payment', 'Paid to Name', 'Address', 'Invoice/Bill No.', 'Payment Method', 'Bank Name']; // Updated headers
+            let csvContent = headers.join(',') + '\n';
+            transactions.forEach(transaction => {
+                const row = [
+                    transaction.serialNo,
+                    transaction.transactionDate,
+                    transaction.amount,
+                    transaction.paymentNature,
+                    `"${(transaction.payeeName || '').replace(/"/g, '""')}"`,
+                    `"${(transaction.payeeAddress || '').replace(/"/g, '""')}"`,
+                    `"${(transaction.invoiceNumber || '').replace(/"/g, '""')}"`,
+                    transaction.paymentMethod || '',
+                    `"${(transaction.bankName || '').replace(/"/g, '""')}"` // Added bankName
+                ];
+                csvContent += row.join(',') + '\n';
+            });
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('hidden', '');
+            a.setAttribute('href', url);
+            a.setAttribute('download', `transactions_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showNotification('Data exported successfully!', 'success');
+        }
         
         function showNotification(message, type) {
             // Remove any existing notifications
@@ -609,7 +783,9 @@
         `;
         document.head.appendChild(keyframeStyle);
 
-        // Removed sendEmailReport function and its button call
+        // Removed sendEmailReport function from here, EmailJS script still loaded if needed elsewhere.
+        // If EmailJS is not used at all, its script tag can also be removed from HTML.
+
     </script>
 </body>
 </html>
