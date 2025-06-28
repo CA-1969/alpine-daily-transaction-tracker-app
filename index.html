@@ -145,7 +145,7 @@
             gap: 10px;
         }
         
-        .export-btn {
+        .export-btn { /* This style is kept but the button is removed in HTML */
             background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
             color: white;
             padding: 12px 25px;
@@ -156,7 +156,7 @@
             transition: all 0.3s ease;
         }
         
-        .export-btn:hover {
+        .export-btn:hover { /* This style is kept but the button is removed in HTML */
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(39, 174, 96, 0.3);
         }
@@ -392,8 +392,8 @@
             <div class="table-header">
                 <h2>Transaction History</h2>
                 <div class="table-header-buttons">
-                    <button class="export-btn" onclick="exportToCSV()">Export to Excel</button>
-                    <button class="export-btn" onclick="sendEmailReport()" style="background: #e67e22;">Email Daily Report</button>
+                    <!-- Removed Export to Excel Button -->
+                    <!-- Removed Email Daily Report Button -->
                 </div>
             </div>
             
@@ -553,38 +553,7 @@
             document.getElementById('pendingCount').textContent = '0'; // If you want to track pending, you need a 'status' field for each transaction and filter accordingly
         }
         
-        function exportToCSV() {
-            if (transactions.length === 0) {
-                showNotification('No transactions to export.', 'error');
-                return;
-            }
-            const headers = ['S.No.', 'Transaction Date', 'Amount', 'Nature of Payment', 'Paid to Name', 'Address', 'Invoice/Bill No.', 'Payment Method'];
-            let csvContent = headers.join(',') + '\n';
-            transactions.forEach(transaction => {
-                const row = [
-                    transaction.serialNo,
-                    transaction.transactionDate,
-                    transaction.amount,
-                    transaction.paymentNature,
-                    `"${(transaction.payeeName || '').replace(/"/g, '""')}"`,
-                    `"${(transaction.payeeAddress || '').replace(/"/g, '""')}"`,
-                    `"${(transaction.invoiceNumber || '').replace(/"/g, '""')}"`,
-                    transaction.paymentMethod || ''
-                ];
-                csvContent += row.join(',') + '\n';
-            });
-            
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.setAttribute('hidden', '');
-            a.setAttribute('href', url);
-            a.setAttribute('download', `transactions_${new Date().toISOString().split('T')[0]}.csv`);
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            showNotification('Data exported successfully!', 'success');
-        }
+        // Removed exportToCSV function
         
         function showNotification(message, type) {
             // Remove any existing notifications
@@ -640,59 +609,7 @@
         `;
         document.head.appendChild(keyframeStyle);
 
-        // ## EMAILJS FUNCTION - INTEGRATE YOUR KEYS ##
-        function sendEmailReport() {
-            if (transactions.length === 0) {
-                showNotification('No transactions to email.', 'error');
-                return;
-            }
-            // Use native confirm for critical email action. Removed auto-confirmation.
-            if (!confirm('Are you sure you want to email the current transaction report?')) {
-                showNotification('Email cancelled.', 'info');
-                return;
-            }
-
-            showNotification('Sending email report...', 'pending');
-
-            // 1. Initialize EmailJS with your Public Key
-            // Get EmailJS script: <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-            // You MUST replace "YOUR_EMAILJS_PUBLIC_KEY" with your actual key from EmailJS dashboard
-            emailjs.init({ publicKey: "rLVcyPgxDBFT6khp5" }); 
-
-            // 2. Prepare the data for the email template
-            const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
-            const reportDate = new Date().toLocaleDateString('en-IN');
-            
-            // Format transactions into a readable plain text string for the <pre> tag in the email
-            let transactionDetails = 'S.No | Date         | Amount          | Nature of Payment     | Payee Name\n';
-            transactionDetails += '-----------------------------------------------------------------------------------\n';
-            transactions.forEach(t => {
-                const paddedAmount = `₹${t.amount.toLocaleString('en-IN')}`.padEnd(15);
-                const paddedNature = t.paymentNature.padEnd(21);
-                transactionDetails += `${String(t.serialNo).padEnd(4)} | ${t.transactionDate} | ${paddedAmount} | ${paddedNature} | ${t.payeeName}\n`;
-            });
-
-            // 3. Create the template parameters object.
-            // These keys must match the variables in your EmailJS template.
-            const templateParams = {
-                report_date: reportDate,
-                total_transactions: transactions.length,
-                total_amount: `₹${totalAmount.toLocaleString('en-IN')}`,
-                transaction_data: transactionDetails
-            };
-
-            // 4. Send the email using your Service ID and Template ID
-            // You MUST replace "YOUR_EMAILJS_SERVICE_ID" and "YOUR_EMAILJS_TEMPLATE_ID"
-            emailjs.send('service_h2a64b6', 'template_8dns7js', templateParams) 
-                .then(function(response) {
-                   showNotification('Email report sent successfully!', 'success');
-                   console.log('EMAILJS SUCCESS!', response.status, response.text);
-                }, function(error) {
-                   showNotification('Failed to send email. Check console.', 'error');
-                   console.error('EMAILJS FAILED...', error);
-                });
-        }
-
+        // Removed sendEmailReport function and its button call
     </script>
 </body>
 </html>
