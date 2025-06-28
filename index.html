@@ -407,8 +407,8 @@
             <div class="table-header">
                 <h2>Transaction History</h2>
                 <div class="table-header-buttons">
-                    <!-- Removed Export to Excel Button -->
-                    <!-- Removed Email Daily Report Button -->
+                    <!-- Export to Excel Button Removed -->
+                    <!-- Email Daily Report Button Removed -->
                 </div>
             </div>
             
@@ -436,13 +436,13 @@
     </div>
     
     <iframe id="hiddenIframe" name="hiddenIframe" style="display:none;"></iframe>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     
     <script>
         // Backend URL for Project 4
-        const backendWebAppUrl = 'https://script.google.com/macros/s/AKfycbwb4PLvNHPG6NkySjltPSqbkYCd_GtsYw3QRBttbDPLT1moRQq0SW6cy1-BU7hznY8r/exec'; 
+        const backendWebAppUrl = 'https://script.google.com/macros/s/AKfycby8uifcj4KJaUj4A6FFnuDXAtroEkmnzZAXQ8n8z5Z7e5_Lwz1X4uHHCTXig_FVlMJAEg/exec'; 
 
         let transactions = JSON.parse(localStorage.getItem('transactions_project4')) || []; // Unique key for Project 4
-        // Ensure serialCounter starts from the next available number or 1
         let serialCounter = transactions.length > 0 ? Math.max(...transactions.map(t => t.serialNo)) + 1 : 1;
         
         // DOM Elements
@@ -477,15 +477,17 @@
         // --- Dynamic Payee Name Logic ---
         function updatePayeeNameField() {
             const currentNature = paymentNatureSelect.value;
+            let currentPayeeNameInput = document.getElementById('payeeName'); // Current input/select
             let newPayeeNameElement;
 
-            // Clear existing payeeName field and its label
-            payeeNameGroup.innerHTML = ''; 
+            // Remove existing payeeName field
+            if (currentPayeeNameInput) {
+                payeeNameGroup.removeChild(currentPayeeNameInput);
+            }
 
             const label = document.createElement('label');
             label.htmlFor = 'payeeName';
             label.textContent = 'Payee Name *'; // Required for all payee types
-            payeeNameGroup.appendChild(label); // Add label first
 
             if (currentNature === 'Salary to Teaching Staff') {
                 newPayeeNameElement = document.createElement('select');
@@ -526,7 +528,7 @@
                 newPayeeNameElement.id = 'payeeName';
                 newPayeeNameElement.name = 'payeeName';
                 newPayeeNameElement.required = true;
-                newPayeeNameElement.className = 'flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
+                newPayeeNameElement.className = 'flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
                 
                 let defaultOption = document.createElement('option');
                 defaultOption.value = '';
@@ -545,8 +547,10 @@
                 newPayeeNameElement.name = 'payeeName';
                 newPayeeNameElement.placeholder = 'Enter payee name';
                 newPayeeNameElement.required = true;
-                newPayeeNameElement.className = 'flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
+                newPayeeNameElement.className = 'flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
             }
+            payeeNameGroup.innerHTML = ''; // Clear existing content including label
+            payeeNameGroup.appendChild(label);
             payeeNameGroup.appendChild(newPayeeNameElement);
         }
         paymentNatureSelect.addEventListener('change', updatePayeeNameField);
